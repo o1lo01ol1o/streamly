@@ -75,7 +75,7 @@ import Streamly.SVar (State(..), adaptState, defState)
 import Streamly.Fold.Types (Fold(..))
 
 import qualified Streamly.Streams.StreamK as K
-
+import Plugin (MAKE_ME_GO_AWAY(..))
 ------------------------------------------------------------------------------
 -- The direct style stream type
 ------------------------------------------------------------------------------
@@ -83,6 +83,7 @@ import qualified Streamly.Streams.StreamK as K
 -- | A stream is a succession of 'Step's. A 'Yield' produces a single value and
 -- the next state of the stream. 'Stop' indicates there are no more values in
 -- the stream.
+{-# ANN type Step MAKE_ME_GO_AWAY #-}
 data Step s a = Yield a s | Skip s | Stop
 
 {-

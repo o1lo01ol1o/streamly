@@ -304,6 +304,7 @@ import Streamly.Pipe.Types (Pipe(..), PipeState(..))
 import Streamly.SVar (MonadAsync, defState, adaptState)
 import Streamly.Unfold.Types (Unfold(..))
 import Streamly.Strict (Tuple'(..))
+import Plugin (MAKE_ME_GO_AWAY(..))
 
 import Streamly.Streams.StreamD.Type
 
@@ -1831,6 +1832,7 @@ mapM_ m = drain . mapM m
 -------------------------------------------------------------------------------
 
 -- Define a unique structure to use in inspection testing
+{-# ANN type ConcatMapUState MAKE_ME_GO_AWAY #-}
 data ConcatMapUState o i =
       ConcatMapUOuter o
     | ConcatMapUInner o i
@@ -3068,10 +3070,14 @@ decode table state codep byte =
                     (256 + fromIntegral state + fromIntegral t)
      in (Tuple' state' codep')
 
+{-# ANN type FreshPoint MAKE_ME_GO_AWAY #-}
 data FreshPoint s
     = FreshPoint !CodePoint !DecoderState s
     | YieldAndContinue !Char (FreshPoint s)
     | Done
+
+{-# NOINLINE myerror #-}
+myerror = error
 
 -- XXX Add proper error messages
 {-# INLINE_NORMAL decodeUtf8With #-}
@@ -3084,13 +3090,13 @@ decodeUtf8With cfm (Stream step state) =
     {-# INLINE transliterateOrError #-}
     transliterateOrError e s =
         case cfm of
-            ErrorOnCodingFailure -> error e
+            ErrorOnCodingFailure -> myerror e
             TransliterateCodingFailure -> YieldAndContinue replacementChar s
     {-# INLINE inputUnderflow #-}
     inputUnderflow =
         case cfm of
             ErrorOnCodingFailure ->
-                error "Streamly.Streams.StreamD.decodeUtf8With: Input Underflow"
+                myerror "Streamly.Streams.StreamD.decodeUtf8With: Input Underflow"
             TransliterateCodingFailure -> YieldAndContinue replacementChar Done
     {-# INLINE_LATE step' #-}
     step' table gst (FreshPoint codepointPtr statePtr st) = do
@@ -3135,6 +3141,7 @@ decodeUtf8 = decodeUtf8With ErrorOnCodingFailure
 decodeUtf8Lenient :: Monad m => Stream m Word8 -> Stream m Char
 decodeUtf8Lenient = decodeUtf8With TransliterateCodingFailure
 
+{-# ANN type FlattenState MAKE_ME_GO_AWAY #-}
 data FlattenState s a
     = OuterLoop s !CodePoint !DecoderState
     | InnerLoop s (ForeignPtr a) !CodePoint !DecoderState !(Ptr a) !(Ptr a)
@@ -3164,14 +3171,14 @@ decodeUtf8ArraysWith cfm (Stream step state) =
     {-# INLINE transliterateOrError #-}
     transliterateOrError e s =
         case cfm of
-            ErrorOnCodingFailure -> error e
+            ErrorOnCodingFailure -> myerror e
             TransliterateCodingFailure -> YAndC replacementChar s
     {-# INLINE inputUnderflow #-}
     inputUnderflow =
         case cfm of
             ErrorOnCodingFailure ->
-                error
-                    "Streamly.Streams.StreamD.decodeUtf8ArraysWith: Input Underflow"
+                myerror
+                      "Streamly.Streams.StreamD.decodeUtf8ArraysWith: Input Underflow"
             TransliterateCodingFailure -> YAndC replacementChar D
     {-# INLINE_LATE step' #-}
     step' _ gst (OuterLoop st cp ds) = do
@@ -3231,6 +3238,7 @@ decodeUtf8ArraysLenient = decodeUtf8ArraysWith TransliterateCodingFailure
 
 data WList = WCons !Word8 !WList | WNil
 
+{-# ANN type EncodeState MAKE_ME_GO_AWAY #-}
 data EncodeState s = EncodeState s !WList
 
 {-# INLINE_NORMAL encodeUtf8 #-}
@@ -3251,8 +3259,8 @@ encodeUtf8 (Stream step state) = Stream step' (EncodeState state WNil)
                             | x <= 0x7FF -> Skip (EncodeState s (ord2 c))
                             | x <= 0xFFFF ->
                                 if isSurrogate c
-                                    then error
-                                             "Streamly.Streams.StreamD.encodeUtf8: Encountered a surrogate"
+                                    then myerror
+                                               "Streamly.Streams.StreamD.encodeUtf8: Encountered a surrogate"
                                     else Skip (EncodeState s (ord3 c))
                             | otherwise -> Skip (EncodeState s (ord4 c))
                 Skip s -> Skip (EncodeState s WNil)
