@@ -287,7 +287,7 @@ library
                      , Streamly.Unfold
 
                     -- Folds
-                     , Streamly.Fold.Types
+                     
                      , Streamly.Sink.Types
                      , Streamly.Sink
                      , Streamly.Pipe.Types
@@ -309,6 +309,7 @@ library
                      , Streamly.Time
                      , Streamly
                      , Streamly.Fold
+                     , Streamly.Fold.Types
 
                      , Streamly.Data.String
 
